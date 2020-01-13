@@ -26,6 +26,7 @@
 NS_ASSUME_NONNULL_BEGIN
 
 @class YTKBaseRequest;
+@class AFHTTPSessionManager; /// ⚠️⚠️⚠️ LYH Support
 
 ///  YTKNetworkAgent is the underlying class that handles actual request generation,
 ///  serialization and response handling.
@@ -52,6 +53,9 @@ NS_ASSUME_NONNULL_BEGIN
 ///
 ///  @return The result URL.
 - (NSString *)buildRequestUrl:(YTKBaseRequest *)request;
+
+/// ⚠️⚠️⚠️ LYH Support
+- (AFHTTPSessionManager *)sessionManager;
 
 @end
 

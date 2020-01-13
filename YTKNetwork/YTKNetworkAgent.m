@@ -81,7 +81,8 @@
     if (!_jsonResponseSerializer) {
         _jsonResponseSerializer = [AFJSONResponseSerializer serializer];
         _jsonResponseSerializer.acceptableStatusCodes = _allStatusCodes;
-
+        /// ⚠️⚠️⚠️ LYH Support
+        _jsonResponseSerializer.acceptableContentTypes = nil;
     }
     return _jsonResponseSerializer;
 }
@@ -280,6 +281,14 @@
         }
         return result;
     }
+    /// ⚠️⚠️⚠️ LYH Support
+    result = [request resultValidator];
+    if(!result){
+        if (error) {
+            *error = [NSError errorWithDomain:YTKRequestValidationErrorDomain code:YTKRequestValidationErrorInvalidResult userInfo:@{NSLocalizedDescriptionKey:@"Invalid result"}];
+        }
+        return result;
+    }
     id json = [request responseJSONObject];
     id validator = [request jsonValidator];
     if (json && validator) {
@@ -338,8 +347,17 @@
         succeed = NO;
         requestError = error;
     } else if (serializationError) {
-        succeed = NO;
-        requestError = serializationError;
+        /*
+         succeed = NO;
+         requestError = serializationError;
+         */
+        /// ⚠️⚠️⚠️ LYH Support 忽略解析出错，交由validator统一处理 by zxg
+        succeed = [self validateResult:request error:&validationError];
+        if(validationError){
+            requestError = validationError;
+        }else{
+            requestError = serializationError;
+        }
     } else {
         succeed = [self validateResult:request error:&validationError];
         requestError = validationError;
@@ -571,6 +589,13 @@
 
 - (void)resetURLSessionManagerWithConfiguration:(NSURLSessionConfiguration *)configuration {
     _manager = [[AFHTTPSessionManager alloc] initWithSessionConfiguration:configuration];
+}
+
+#pragma mark -----------------   ⚠️⚠️⚠️ LYH Support  ----------------
+
+- (AFHTTPSessionManager* )sessionManager
+{
+    return _manager;
 }
 
 @end

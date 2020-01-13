@@ -87,6 +87,10 @@ NS_ENUM(NSInteger) {
 ///  Whether cache is asynchronously written to storage. Default is YES.
 - (BOOL)writeCacheAsynchronously;
 
+/// ⚠️⚠️⚠️ LYH Support
+- (void)clearCacheVariables;
+- (BOOL)cacheFileExists;
+
 @end
 
 NS_ASSUME_NONNULL_END
