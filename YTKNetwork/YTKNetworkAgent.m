@@ -73,6 +73,7 @@
         // Take over the status code validation
         _manager.responseSerializer.acceptableStatusCodes = _allStatusCodes;
         _manager.completionQueue = _processingQueue;
+        [_manager setTaskDidFinishCollectingMetricsBlock:_config.collectingMetricsBlock];
     }
     return self;
 }
@@ -126,7 +127,7 @@
             baseUrl = [_config baseUrl];
         }
     }
-    // URL slash compability
+    // URL slash compatibility
     NSURL *url = [NSURL URLWithString:baseUrl];
 
     if (baseUrl.length > 0 && ![baseUrl hasSuffix:@"/"]) {
@@ -170,25 +171,59 @@
     NSString *url = [self buildRequestUrl:request];
     id param = request.requestArgument;
     AFConstructingBlock constructingBlock = [request constructingBodyBlock];
+    AFURLSessionTaskProgressBlock uploadProgressBlock = [request uploadProgressBlock];
     AFHTTPRequestSerializer *requestSerializer = [self requestSerializerForRequest:request];
 
     switch (method) {
         case YTKRequestMethodGET:
             if (request.resumableDownloadPath) {
-                return [self downloadTaskWithDownloadPath:request.resumableDownloadPath requestSerializer:requestSerializer URLString:url parameters:param progress:request.resumableDownloadProgressBlock error:error];
+                return [self downloadTaskWithDownloadPath:request.resumableDownloadPath
+                                        requestSerializer:requestSerializer
+                                                URLString:url
+                                               parameters:param
+                                                 progress:request.resumableDownloadProgressBlock
+                                                    error:error];
             } else {
-                return [self dataTaskWithHTTPMethod:@"GET" requestSerializer:requestSerializer URLString:url parameters:param error:error];
+                return [self dataTaskWithHTTPMethod:@"GET"
+                                  requestSerializer:requestSerializer
+                                          URLString:url
+                                         parameters:param
+                                              error:error];
             }
         case YTKRequestMethodPOST:
-            return [self dataTaskWithHTTPMethod:@"POST" requestSerializer:requestSerializer URLString:url parameters:param constructingBodyWithBlock:constructingBlock error:error];
+            return [self dataTaskWithHTTPMethod:@"POST"
+                              requestSerializer:requestSerializer
+                                      URLString:url
+                                     parameters:param
+                                 uploadProgress:uploadProgressBlock
+                      constructingBodyWithBlock:constructingBlock
+                                          error:error];
         case YTKRequestMethodHEAD:
-            return [self dataTaskWithHTTPMethod:@"HEAD" requestSerializer:requestSerializer URLString:url parameters:param error:error];
+            return [self dataTaskWithHTTPMethod:@"HEAD"
+                              requestSerializer:requestSerializer
+                                      URLString:url
+                                     parameters:param
+                                          error:error];
         case YTKRequestMethodPUT:
-            return [self dataTaskWithHTTPMethod:@"PUT" requestSerializer:requestSerializer URLString:url parameters:param error:error];
+            return [self dataTaskWithHTTPMethod:@"PUT"
+                              requestSerializer:requestSerializer
+                                      URLString:url
+                                     parameters:param
+                                 uploadProgress:uploadProgressBlock
+                      constructingBodyWithBlock:constructingBlock
+                                          error:error];
         case YTKRequestMethodDELETE:
-            return [self dataTaskWithHTTPMethod:@"DELETE" requestSerializer:requestSerializer URLString:url parameters:param error:error];
+            return [self dataTaskWithHTTPMethod:@"DELETE"
+                              requestSerializer:requestSerializer
+                                      URLString:url
+                                     parameters:param
+                                          error:error];
         case YTKRequestMethodPATCH:
-            return [self dataTaskWithHTTPMethod:@"PATCH" requestSerializer:requestSerializer URLString:url parameters:param error:error];
+            return [self dataTaskWithHTTPMethod:@"PATCH"
+                              requestSerializer:requestSerializer
+                                      URLString:url
+                                     parameters:param
+                                          error:error];
     }
 }
 
@@ -200,7 +235,10 @@
     NSURLRequest *customUrlRequest= [request buildCustomUrlRequest];
     if (customUrlRequest) {
         __block NSURLSessionDataTask *dataTask = nil;
-        dataTask = [_manager dataTaskWithRequest:customUrlRequest completionHandler:^(NSURLResponse * _Nonnull response, id  _Nullable responseObject, NSError * _Nullable error) {
+        dataTask = [_manager dataTaskWithRequest:customUrlRequest
+                                  uploadProgress:nil
+                                downloadProgress:nil
+                               completionHandler:^(NSURLResponse * _Nonnull response, id  _Nullable responseObject, NSError * _Nullable error) {
             [self handleRequestResult:dataTask responseObject:responseObject error:error];
         }];
         request.requestTask = dataTask;
@@ -457,13 +495,20 @@
                                        URLString:(NSString *)URLString
                                       parameters:(id)parameters
                                            error:(NSError * _Nullable __autoreleasing *)error {
-    return [self dataTaskWithHTTPMethod:method requestSerializer:requestSerializer URLString:URLString parameters:parameters constructingBodyWithBlock:nil error:error];
+    return [self dataTaskWithHTTPMethod:method
+                      requestSerializer:requestSerializer
+                              URLString:URLString
+                             parameters:parameters
+                         uploadProgress:nil
+              constructingBodyWithBlock:nil
+                                  error:error];
 }
 
 - (NSURLSessionDataTask *)dataTaskWithHTTPMethod:(NSString *)method
                                requestSerializer:(AFHTTPRequestSerializer *)requestSerializer
                                        URLString:(NSString *)URLString
                                       parameters:(id)parameters
+                                  uploadProgress:(AFURLSessionTaskProgressBlock)uploadProgress
                        constructingBodyWithBlock:(nullable void (^)(id <AFMultipartFormData> formData))block
                                            error:(NSError * _Nullable __autoreleasing *)error {
     NSMutableURLRequest *request = nil;
@@ -476,6 +521,8 @@
 
     __block NSURLSessionDataTask *dataTask = nil;
     dataTask = [_manager dataTaskWithRequest:request
+                              uploadProgress:uploadProgress
+                            downloadProgress:nil
                            completionHandler:^(NSURLResponse * __unused response, id responseObject, NSError *_error) {
                                [self handleRequestResult:dataTask responseObject:responseObject error:_error];
                            }];
