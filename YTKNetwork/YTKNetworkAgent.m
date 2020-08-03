@@ -541,7 +541,7 @@
 
     NSString *downloadTargetPath;
     BOOL isDirectory;
-    if(![[NSFileManager defaultManager] fileExistsAtPath:downloadPath isDirectory:&isDirectory]) {
+    if (![[NSFileManager defaultManager] fileExistsAtPath:downloadPath isDirectory:&isDirectory]) {
         isDirectory = NO;
     }
     // If targetPath is a directory, use the file name we got from the urlRequest.
@@ -602,15 +602,15 @@
 
 - (NSString *)incompleteDownloadTempCacheFolder {
     NSFileManager *fileManager = [NSFileManager new];
-    static NSString *cacheFolder;
+    static NSString *cacheFolder = nil;
 
-    if (!cacheFolder) {
+    if (cacheFolder == nil) {
         NSString *cacheDir = NSTemporaryDirectory();
         cacheFolder = [cacheDir stringByAppendingPathComponent:kYTKNetworkIncompleteDownloadFolderName];
     }
 
     NSError *error = nil;
-    if(![fileManager createDirectoryAtPath:cacheFolder withIntermediateDirectories:YES attributes:nil error:&error]) {
+    if (![fileManager createDirectoryAtPath:cacheFolder withIntermediateDirectories:YES attributes:nil error:&error]) {
         YTKLog(@"Failed to create cache directory at %@", cacheFolder);
         cacheFolder = nil;
     }
@@ -618,6 +618,9 @@
 }
 
 - (NSURL *)incompleteDownloadTempPathForDownloadPath:(NSString *)downloadPath {
+    if (downloadPath == nil) {
+        return nil;
+    }
     NSString *tempPath = nil;
     NSString *md5URLString = [YTKNetworkUtils md5StringFromString:downloadPath];
     tempPath = [[self incompleteDownloadTempCacheFolder] stringByAppendingPathComponent:md5URLString];
